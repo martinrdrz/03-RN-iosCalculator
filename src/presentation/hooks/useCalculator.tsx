@@ -1,16 +1,31 @@
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
 enum Operator {
-  add,
-  subtract,
-  multiply,
-  divide,
+  add = '+',
+  subtract = '-',
+  multiply = 'x',
+  divide = '÷',
 }
 
 export const useCalculator = () => {
+  const [formula, setFormula] = useState('0');
   const [number, setNumber] = useState('0');
   const [prevNumber, setPrevNumber] = useState('0');
   const lastOperation = useRef<Operator>();
+
+  useEffect(() => {
+    if (lastOperation.current) {
+      const firstFormulaPart = formula.split(' ').at(0);
+      setFormula(`${firstFormulaPart} ${lastOperation.current} ${number}`);
+    } else {
+      setFormula(number);
+    }
+  }, [number]);
+
+  useEffect(() => {
+    const subResult = calculateSubResult();
+    setPrevNumber(`${subResult}`);
+  }, [formula]);
 
   const buildNumber = (numberString: string) => {
     if (number.includes('.') && numberString === '.') return;
@@ -44,6 +59,8 @@ export const useCalculator = () => {
   const clean = () => {
     setNumber('0');
     setPrevNumber('0');
+    lastOperation.current = undefined;
+    setFormula('');
   };
 
   const deleteOperation = () => {
@@ -65,6 +82,7 @@ export const useCalculator = () => {
   };
 
   const setLastNumber = () => {
+    calculateResult();
     if (number.endsWith('.')) {
       setPrevNumber(number.slice(0, -1));
     } else {
@@ -93,10 +111,39 @@ export const useCalculator = () => {
     lastOperation.current = Operator.add;
   };
 
+  const calculateResult = () => {
+    const result = calculateSubResult();
+    setFormula(`${result}`);
+    lastOperation.current = undefined;
+    setPrevNumber(`0`);
+  };
+
+  const calculateSubResult = (): number => {
+    const [fisrtsValue, operation, secondValue] = formula.split(' ');
+    const num1 = Number(fisrtsValue);
+    const num2 = Number(secondValue);
+
+    if (isNaN(num2)) return num1;
+
+    switch (operation) {
+      case Operator.divide:
+        return num1 / num2;
+      case Operator.multiply:
+        return num1 * num2;
+      case Operator.subtract:
+        return num1 - num2;
+      case Operator.add:
+        return num1 + num2;
+      default:
+        throw new Error('Operation not implemented');
+    }
+  };
+
   return {
     //propierties
     number,
     prevNumber,
+    formula,
 
     //methods
     buildNumber,
@@ -107,5 +154,9 @@ export const useCalculator = () => {
     multiplyOperation,
     substractOperation,
     addOperation,
+    calculateResult,
   };
 };
+function If(current: Operator | undefined) {
+  throw new Error('Function not implemented.');
+}
